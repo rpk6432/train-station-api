@@ -1,6 +1,7 @@
 import os
 import uuid
 
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.text import slugify
 
@@ -21,7 +22,11 @@ class Route(models.Model):
     destination = models.ForeignKey(
         Station, on_delete=models.CASCADE, related_name="destination_routes"
     )
-    distance = models.IntegerField()
+    distance = models.PositiveIntegerField()
+
+    def clean(self):
+        if self.source == self.destination:
+            raise ValidationError("Source and destination cannot be the same.")
 
     def __str__(self):
         return f"{self.source.name} -> {self.destination.name}"
@@ -43,12 +48,14 @@ def train_image_file_path(instance, filename):
 
 class Train(models.Model):
     name = models.CharField(max_length=255)
-    cargo_num = models.IntegerField()
-    places_in_cargo = models.IntegerField()
+    cargo_num = models.PositiveIntegerField()
+    places_in_cargo = models.PositiveIntegerField()
     train_type = models.ForeignKey(
         TrainType, on_delete=models.CASCADE, related_name="trains"
     )
-    image = models.ImageField(null=True, upload_to=train_image_file_path)
+    image = models.ImageField(
+        null=True, blank=True, upload_to=train_image_file_path
+    )
 
     @property
     def capacity(self) -> int:
@@ -62,12 +69,12 @@ class Crew(models.Model):
     first_name = models.CharField(max_length=255)
     last_name = models.CharField(max_length=255)
 
-    def __str__(self):
-        return f"{self.first_name} {self.last_name}"
-
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}"
+
+    def __str__(self):
+        return self.full_name
 
 
 class Journey(models.Model):
@@ -80,6 +87,10 @@ class Journey(models.Model):
     crew = models.ManyToManyField(Crew, related_name="journeys", blank=True)
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
+
+    def clean(self):
+        if self.arrival_time <= self.departure_time:
+            raise ValidationError("Arrival time must be after departure time.")
 
     def __str__(self):
         return f"{self.route} ({self.departure_time})"
