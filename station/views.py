@@ -1,7 +1,13 @@
 from rest_framework import viewsets, mixins
 from user.permissions import IsAdminOrReadOnly
-from .models import Station, TrainType, Crew
-from .serializers import StationSerializer, TrainTypeSerializer, CrewSerializer
+from .models import Station, TrainType, Crew, Route
+from .serializers import (
+    StationSerializer,
+    TrainTypeSerializer,
+    CrewSerializer,
+    RouteSerializer,
+    RouteListSerializer,
+)
 
 
 class BaseViewSet(
@@ -27,3 +33,13 @@ class TrainTypeViewSet(BaseViewSet):
 class CrewViewSet(BaseViewSet):
     queryset = Crew.objects.all()
     serializer_class = CrewSerializer
+
+
+class RouteViewSet(BaseViewSet):
+    queryset = Route.objects.select_related("source", "destination")
+    serializer_class = RouteSerializer
+
+    def get_serializer_class(self):
+        if self.action in ("list", "retrieve"):
+            return RouteListSerializer
+        return self.serializer_class
