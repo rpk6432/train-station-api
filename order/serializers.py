@@ -1,5 +1,6 @@
 from django.db import transaction
 from rest_framework import serializers
+from rest_framework.validators import UniqueTogetherValidator
 
 from station.serializers import JourneyListSerializer
 from .models import Order, Ticket
@@ -9,6 +10,13 @@ class TicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = ("id", "cargo", "seat", "journey")
+        validators = [
+            UniqueTogetherValidator(
+                queryset=Ticket.objects.all(),
+                fields=("journey", "cargo", "seat"),
+                message="This seat is already taken on this journey."
+            )
+        ]
 
 
 class TicketDetailSerializer(TicketSerializer):
@@ -21,6 +29,32 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Order
         fields = ("id", "tickets", "created_at")
+
+    def validate_tickets(self, tickets):
+        if not tickets:
+            return tickets
+
+        positions_list = [
+            (t["cargo"], t["seat"], t["journey"]) for t in tickets
+        ]
+        if len(positions_list) != len(set(positions_list)):
+            raise serializers.ValidationError("An order cannot contain duplicate tickets.")
+
+        for ticket_data in tickets:
+            journey = ticket_data["journey"]
+            cargo = ticket_data["cargo"]
+            seat = ticket_data["seat"]
+            train = journey.train
+
+            if not (1 <= cargo <= train.cargo_num):
+                raise serializers.ValidationError(
+                    f"Cargo {cargo} is not valid for train {train.name}."
+                )
+            if not (1 <= seat <= train.places_in_cargo):
+                raise serializers.ValidationError(
+                    f"Seat {seat} is not valid for train {train.name}."
+                )
+        return tickets
 
     @transaction.atomic
     def create(self, validated_data):

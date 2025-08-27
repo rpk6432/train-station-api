@@ -27,6 +27,13 @@ class RouteSerializer(serializers.ModelSerializer):
         model = Route
         fields = ("id", "source", "destination", "distance")
 
+    def validate(self, data):
+        if data.get("source") == data.get("destination"):
+            raise serializers.ValidationError(
+                "Source and destination cannot be the same."
+            )
+        return data
+
 
 class RouteListSerializer(RouteSerializer):
     source = StationSerializer(many=False, read_only=True)
@@ -46,6 +53,14 @@ class TrainSerializer(serializers.ModelSerializer):
             "image",
         )
         read_only_fields = ("capacity",)
+
+    def validate(self, data):
+        for attr in ["cargo_num", "places_in_cargo"]:
+            if data.get(attr) <= 0:
+                raise serializers.ValidationError(
+                    {attr: "Value must be a positive number."}
+                )
+        return data
 
 
 class TrainListSerializer(TrainSerializer):
@@ -102,6 +117,13 @@ class JourneySerializer(serializers.ModelSerializer):
             "departure_time",
             "arrival_time",
         )
+
+    def validate(self, data):
+        if data["departure_time"] >= data["arrival_time"]:
+            raise serializers.ValidationError(
+                {"arrival_time": "Arrival time must be after departure time."}
+            )
+        return data
 
 
 class JourneyListSerializer(serializers.ModelSerializer):
