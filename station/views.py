@@ -1,10 +1,11 @@
+from django.db.models import Count, F
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 
 from user.permissions import IsAdminOrReadOnly
-from .models import Station, TrainType, Crew, Route, Train
+from .models import Station, TrainType, Crew, Route, Train, Journey
 from .serializers import (
     StationSerializer,
     TrainTypeSerializer,
@@ -15,6 +16,9 @@ from .serializers import (
     TrainListSerializer,
     TrainSerializer,
     TrainDetailSerializer,
+    JourneyListSerializer,
+    JourneyDetailSerializer,
+    JourneySerializer,
 )
 
 
@@ -80,3 +84,35 @@ class TrainViewSet(BaseViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class JourneyViewSet(BaseViewSet):
+    queryset = Journey.objects.all()
+    serializer_class = JourneySerializer
+
+    def get_queryset(self):
+        queryset = self.queryset.annotate(
+            tickets_available=(
+                F("train__cargo_num") * F("train__places_in_cargo")
+                - Count("tickets")
+            )
+        )
+
+        if self.action == "list":
+            queryset = queryset.select_related(
+                "route__source", "route__destination", "train"
+            )
+
+        if self.action == "retrieve":
+            queryset = queryset.select_related(
+                "route__source", "route__destination", "train"
+            ).prefetch_related("crew", "tickets")
+
+        return queryset
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return JourneyListSerializer
+        if self.action == "retrieve":
+            return JourneyDetailSerializer
+        return self.serializer_class
