@@ -22,6 +22,9 @@ class OrderViewSet(
     def get_queryset(self):
         queryset = self.queryset.filter(user=self.request.user)
 
+        if date := self.request.query_params.get("date"):
+            queryset = queryset.filter(created_at__date=date)
+
         if self.action == "list":
             queryset = queryset.annotate(tickets_count=Count("tickets"))
 
