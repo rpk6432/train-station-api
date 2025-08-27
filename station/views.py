@@ -91,16 +91,37 @@ class JourneyViewSet(BaseViewSet):
     serializer_class = JourneySerializer
 
     def get_queryset(self):
-        queryset = self.queryset.annotate(
-            tickets_available=(
-                F("train__cargo_num") * F("train__places_in_cargo")
-                - Count("tickets")
-            )
-        )
+        queryset = self.queryset
+
+        if source := self.request.query_params.get("from"):
+            if source.isdigit():
+                queryset = queryset.filter(route__source__id=int(source))
+            else:
+                queryset = queryset.filter(
+                    route__source__name__icontains=source
+                )
+
+        if destination := self.request.query_params.get("to"):
+            if destination.isdigit():
+                queryset = queryset.filter(
+                    route__destination__id=int(destination)
+                )
+            else:
+                queryset = queryset.filter(
+                    route__destination__name__icontains=destination
+                )
+
+        if date := self.request.query_params.get("date"):
+            queryset = queryset.filter(departure_time__date=date)
 
         if self.action == "list":
             queryset = queryset.select_related(
                 "route__source", "route__destination", "train"
+            ).annotate(
+                tickets_available=(
+                    F("train__cargo_num") * F("train__places_in_cargo")
+                    - Count("tickets")
+                )
             )
 
         if self.action == "retrieve":
