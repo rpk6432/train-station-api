@@ -37,6 +37,20 @@ def create_sample_journey():
     return journey
 
 
+def get_results(response):
+    """
+    Return the list of items from a DRF list response.
+
+    If the view uses pagination, response.data is a dict containing "results";
+    otherwise response.data is the list itself.
+    """
+
+    data = response.data
+    if isinstance(data, dict) and "results" in data:
+        return data["results"]
+    return data
+
+
 class OrderApiTests(TestCase):
     def setUp(self):
         self.client = APIClient()
@@ -61,11 +75,12 @@ class OrderApiTests(TestCase):
         own_order = Order.objects.create(user=self.user)
 
         res = self.client.get(ORDER_URL)
+        items = get_results(res)
         serializer = OrderListSerializer([own_order], many=True)
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(res.data), 1)
-        self.assertEqual(res.data, serializer.data)
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items, serializer.data)
 
     def test_create_order_success(self):
         """Test creating an order is successful"""
@@ -130,7 +145,8 @@ class OrderApiTests(TestCase):
         )
 
         res = self.client.get(ORDER_URL, {"date": str(today)})
-        ids = [o["id"] for o in res.data]
+        items = get_results(res)
+        ids = [o["id"] for o in items]
 
         self.assertIn(order_today.id, ids)
         self.assertNotIn(order_yesterday.id, ids)
