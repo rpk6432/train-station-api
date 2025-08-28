@@ -11,6 +11,9 @@ class Station(models.Model):
     latitude = models.FloatField()
     longitude = models.FloatField()
 
+    class Meta:
+        ordering = ["name"]
+
     def __str__(self):
         return self.name
 
