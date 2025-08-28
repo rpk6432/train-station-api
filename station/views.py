@@ -1,8 +1,11 @@
-from django.db.models import Count, F
+from typing import Type
+
+from django.db.models import Count, F, QuerySet
 from rest_framework import viewsets, mixins, status
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
+from rest_framework.serializers import Serializer
 
 from user.permissions import IsAdminOrReadOnly
 from .models import Station, TrainType, Crew, Route, Train, Journey
@@ -51,7 +54,7 @@ class RouteViewSet(BaseViewSet):
     queryset = Route.objects.select_related("source", "destination")
     serializer_class = RouteSerializer
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[Serializer]:
         if self.action in ("list", "retrieve"):
             return RouteListSerializer
         return self.serializer_class
@@ -61,7 +64,7 @@ class TrainViewSet(BaseViewSet):
     queryset = Train.objects.select_related("train_type")
     serializer_class = TrainSerializer
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[Serializer]:
         if self.action == "list":
             return TrainListSerializer
         if self.action == "retrieve":
@@ -76,7 +79,7 @@ class TrainViewSet(BaseViewSet):
         url_path="upload-image",
         permission_classes=[IsAdminUser],
     )
-    def upload_image(self, request, pk=None):
+    def upload_image(self, request, pk=None) -> Response:
         """Endpoint for uploading image to a specific train"""
         train = self.get_object()
         serializer = self.get_serializer(train, data=request.data)
@@ -90,7 +93,7 @@ class JourneyViewSet(BaseViewSet):
     queryset = Journey.objects.all()
     serializer_class = JourneySerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         queryset = self.queryset
 
         if source := self.request.query_params.get("from"):
@@ -131,7 +134,7 @@ class JourneyViewSet(BaseViewSet):
 
         return queryset
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[Serializer]:
         if self.action == "list":
             return JourneyListSerializer
         if self.action == "retrieve":

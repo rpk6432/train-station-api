@@ -1,6 +1,9 @@
-from django.db.models import Count
+from typing import Type
+
+from django.db.models import Count, QuerySet
 from rest_framework import viewsets, mixins
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.serializers import Serializer
 from .models import Order
 from .serializers import (
     OrderSerializer,
@@ -19,7 +22,7 @@ class OrderViewSet(
     serializer_class = OrderSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet:
         queryset = self.queryset.filter(user=self.request.user)
 
         if date := self.request.query_params.get("date"):
@@ -36,12 +39,12 @@ class OrderViewSet(
             )
         return queryset
 
-    def get_serializer_class(self):
+    def get_serializer_class(self) -> Type[Serializer]:
         if self.action == "list":
             return OrderListSerializer
         if self.action == "retrieve":
             return OrderDetailSerializer
         return self.serializer_class
 
-    def perform_create(self, serializer):
+    def perform_create(self, serializer: Serializer) -> None:
         serializer.save(user=self.request.user)

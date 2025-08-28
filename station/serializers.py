@@ -1,3 +1,5 @@
+from typing import Any
+
 from rest_framework import serializers
 
 from .models import Station, TrainType, Crew, Route, Train, Journey
@@ -27,7 +29,7 @@ class RouteSerializer(serializers.ModelSerializer):
         model = Route
         fields = ("id", "source", "destination", "distance")
 
-    def validate(self, data):
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         if data.get("source") == data.get("destination"):
             raise serializers.ValidationError(
                 "Source and destination cannot be the same."
@@ -54,7 +56,7 @@ class TrainSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("capacity",)
 
-    def validate(self, data):
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         for attr in ["cargo_num", "places_in_cargo"]:
             if data.get(attr) <= 0:
                 raise serializers.ValidationError(
@@ -118,7 +120,7 @@ class JourneySerializer(serializers.ModelSerializer):
             "arrival_time",
         )
 
-    def validate(self, data):
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
         if data["departure_time"] >= data["arrival_time"]:
             raise serializers.ValidationError(
                 {"arrival_time": "Arrival time must be after departure time."}
@@ -167,7 +169,7 @@ class JourneyDetailSerializer(JourneySerializer):
             "taken_seats",
         )
 
-    def get_taken_seats(self, obj):
+    def get_taken_seats(self, obj: Journey) -> list[dict[str, int]]:
         return [
             {"cargo": ticket.cargo, "seat": ticket.seat}
             for ticket in obj.tickets.all()

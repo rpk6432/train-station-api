@@ -14,7 +14,7 @@ class Station(models.Model):
     class Meta:
         ordering = ["name"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -27,22 +27,22 @@ class Route(models.Model):
     )
     distance = models.PositiveIntegerField()
 
-    def clean(self):
+    def clean(self) -> None:
         if self.source == self.destination:
             raise ValidationError("Source and destination cannot be the same.")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.source.name} -> {self.destination.name}"
 
 
 class TrainType(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
-def train_image_file_path(instance, filename):
+def train_image_file_path(instance, filename) -> str:
     _, extension = os.path.splitext(filename)
     filename = f"{slugify(instance.name)}-{uuid.uuid4()}{extension}"
 
@@ -64,7 +64,7 @@ class Train(models.Model):
     def capacity(self) -> int:
         return self.cargo_num * self.places_in_cargo
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 
@@ -73,10 +73,10 @@ class Crew(models.Model):
     last_name = models.CharField(max_length=255)
 
     @property
-    def full_name(self):
+    def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.full_name
 
 
@@ -91,9 +91,9 @@ class Journey(models.Model):
     departure_time = models.DateTimeField()
     arrival_time = models.DateTimeField()
 
-    def clean(self):
+    def clean(self) -> None:
         if self.arrival_time <= self.departure_time:
             raise ValidationError("Arrival time must be after departure time.")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.route} ({self.departure_time})"

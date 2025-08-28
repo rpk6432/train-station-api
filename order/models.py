@@ -16,7 +16,7 @@ class Order(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"Order {self.id} by {self.user}"
 
 
@@ -34,7 +34,7 @@ class Ticket(models.Model):
         unique_together = ("journey", "cargo", "seat")
         ordering = ["cargo", "seat"]
 
-    def clean(self):
+    def clean(self) -> None:
         if not (1 <= self.cargo <= self.journey.train.cargo_num):
             raise ValidationError(
                 {
@@ -49,5 +49,5 @@ class Ticket(models.Model):
                 }
             )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.journey} (Cargo: {self.cargo}, Seat: {self.seat})"
